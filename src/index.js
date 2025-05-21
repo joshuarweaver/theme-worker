@@ -110,6 +110,8 @@ html[data-theme='dark'] .post-header {
 .post-page, .project-page {
   gap: 60px !important;
 }
+.post {width:100% !important;
+}
 .value-props-section, .skillset-section {
   padding-top: 0px !important;
 }
