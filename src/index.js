@@ -112,6 +112,8 @@ html[data-theme='dark'] .post-header {
 }
 .post {width:100% !important;
 }
+.post-card__img-wrapper {display: none !important;
+}
 .value-props-section, .skillset-section {
   padding-top: 0px !important;
 }
