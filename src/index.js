@@ -22,7 +22,7 @@ async function handleRequest(request) {
   const optimizedInjection = `
 <!-- Optimized Font Loading -->
 <link rel="preconnect" href="https://api.fontshare.com" crossorigin>
-<link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700,900&f[]=clash-display@700&f[]=sharpie@900&display=swap" rel="stylesheet">
+<link href="https://api.fontshare.com/v2/css?f[]=satoshi@300,400,500,700,900&f[]=clash-display@700&f[]=sharpie@900&display=swap" rel="stylesheet">
 
 <style>
 /* Core Styles - Combined & Optimized */
