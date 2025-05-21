@@ -3,4 +3,3 @@ main = "src/index.js"
 compatibility_date = "2025-05-21"
 
 route = "joshweaver.com/*"
-zone_name = "joshweaver.com"
