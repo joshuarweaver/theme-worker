@@ -108,9 +108,6 @@ html[data-theme='dark'] .post-header {
 .post-content {padding-bottom: 6rem !important;}
 
 /* Home Page & Layout */
-.hero {
-  padding: 20rem !important;
-}
 .home-page {
   gap: 0px !important;
 }
