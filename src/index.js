@@ -24,7 +24,7 @@ async function handleRequest(request) {
 <style>
 /* Core Styles - Combined & Optimized */
 .logo__title, footer .logo__title {
-  font-family: 'Clash Display', sans-serif;
+  font-family: 'Clash Display', sans-serif !important;
   text-transform: uppercase;
 }
 .logo__title {
