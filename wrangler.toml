@@ -4,5 +4,5 @@ compatibility_date = "2025-05-21"
 
 [triggers]
 routes = [
-  { pattern = "joshweavercom/*", zone_name = "joshweaver.com" }
+  { pattern = "joshweaver.com/*", zone_name = "joshweaver.com" }
 ]
