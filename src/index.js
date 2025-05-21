@@ -112,12 +112,12 @@ html[data-theme='dark'] .post-header {
 .featured-thought__wrapper {
   padding-top: 75px;
 }
-.post-content, .progress-bar, .post-card {background-color: #f1f1f1 !important;
+.post-content, .progress-bar, .post-card {background-color: #f1f1f1;
 }
   .post-content,
  .progress-bar,
   .post-card html[data-theme='dark'] & {
-  background-color: #1D1D1F !important;
+  background-color: #1D1D1F;
 }
 .post-page, .project-page {
   gap: 60px !important;
