@@ -99,9 +99,11 @@ html[data-theme='dark'] .post-header {
   font-size: 2.5rem;
 }
 
-.post-footer {background-color: #ffffff !important;}
+.post-footer {background-color: #ffffff !important; padding: 30px !important;}
+.progress-bar {background-color: #ffffff !important}
 
 .post-footer html[data-theme='dark'] {background-color: #211A14 !important;}
+.progress-bar html[data-theme='dark'] {background-color: #211A14 !important;}
 
 /* Home Page & Layout */
 .hero {
