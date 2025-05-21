@@ -216,7 +216,7 @@ html[data-theme='dark'] .toc-title {
 .toc-list {
   flex: 1;
   overflow-y: auto;
-  height: calc(80vh - 50px);
+  height: 500px;
   padding: 0 15px;
   margin: 0;
   box-sizing: border-box;
