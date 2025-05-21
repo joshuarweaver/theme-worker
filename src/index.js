@@ -93,6 +93,8 @@ html[data-theme='dark'] .post-header {
 .post-card__img-wrapper {
   display: none;
 }
+.page-header__wrapper {justify-content: center !important;
+}
 .section-title__title-text {
   font-size: 2.5rem;
 }
