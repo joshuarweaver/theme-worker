@@ -114,6 +114,11 @@ html[data-theme='dark'] .post-header {
 }
 .post-content, .progress-bar, .post-card {background-color: #f1f1f1 !important;
 }
+  .post-content,
+ .progress-bar,
+  .post-card html[data-theme='dark'] & {
+  background-color: #1D1D1F !important;
+}
 .post-page, .project-page {
   gap: 60px !important;
 }
