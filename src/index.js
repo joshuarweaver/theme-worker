@@ -21,6 +21,9 @@ async function handleRequest(request) {
   // Create optimized injection
   const optimizedInjection = `
 
+<link rel="preconnect" href="https://api.fontshare.com" crossorigin>
+<link href="https://api.fontshare.com/v2/css?f[]=clash-display@700&f[]=satoshi@1,2&display=swap" rel="stylesheet">
+
 <style>
 /* Core Styles - Combined & Optimized */
 .logo__title, footer .logo__title {
