@@ -105,6 +105,8 @@ html[data-theme='dark'] .post-header {
 .post-footer html[data-theme='dark'] {background-color: #211A14 !important;}
 .progress-bar html[data-theme='dark'] {background-color: #211A14 !important;}
 
+.post-content {padding-bottom: 6rem !important;}
+
 /* Home Page & Layout */
 .hero {
   padding: 20rem !important;
