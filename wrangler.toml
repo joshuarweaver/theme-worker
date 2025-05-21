@@ -2,7 +2,5 @@ name = "theme-worker"
 main = "src/index.js"
 compatibility_date = "2025-05-21"
 
-[triggers]
-routes = [
-  { pattern = "joshweaver.com/*", zone_name = "joshweaver.com" }
-]
+route = "joshweaver.com/*"
+zone_name = "joshweaver.com"
