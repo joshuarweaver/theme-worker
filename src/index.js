@@ -99,7 +99,7 @@ html[data-theme='dark'] .post-header {
   font-size: 2.5rem;
 }
 
-.post-footer {background-color: transparent !important; padding: 30px !important;}
+.post-footer  html[data-theme='light'] & {background-color: #ffffff !important; padding: 30px !important;}
 .progress-bar {background-color: #ffffff !important}
 
 .post-footer html[data-theme='dark'] & {background-color: #E6DDD6 !important;}
