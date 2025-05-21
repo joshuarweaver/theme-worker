@@ -1,4 +1,4 @@
-name = "theme-switcher"
+name = "theme-worker"
 main = "src/index.js"
 compatibility_date = "2025-05-21"
 
