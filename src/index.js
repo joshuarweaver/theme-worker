@@ -12,98 +12,125 @@ async function handleRequest(request) {
     return response
   }
 
-  // Get cookies to determine theme preference
-  const cookieHeader = request.headers.get('Cookie') || '';
-  const cookies = Object.fromEntries(
-    cookieHeader.split('; ').map(c => {
-      const [key, ...value] = c.split('=');
-      return [key, value.join('=')];
-    }).filter(c => c[0] !== '')
-  );
-  
-  // Check for theme preference in cookies
-  const darkModeCookie = cookies['darkMode'] === 'true' || cookies['theme-preference'] === 'dark';
-  const lightModeCookie = cookies['darkMode'] === 'false' || cookies['theme-preference'] === 'light';
-  
   // Get HTML content
   let html = await response.text()
   
-  // Create a theme handler that properly respects both modes
-  const themeInjection = `
+  // Create injection for TOC scroller only
+  const tocScrollerInjection = `
 <script data-cfasync="false">
-// Theme preference handler
+// Optimized TOC Scroller
 (function() {
-  // Get stored preference or system preference
-  const storedPreference = localStorage.getItem('darkMode');
-  const cookieDark = "${darkModeCookie}" === "true";
-  const cookieLight = "${lightModeCookie}" === "true";
-  const systemPreference = window.matchMedia('(prefers-color-scheme: dark)').matches;
-  
-  // Determine theme with proper priority
-  let isDark = false;
-  
-  // Explicit user preferences take priority
-  if (storedPreference === 'true') {
-    isDark = true;
-  } else if (storedPreference === 'false') {
-    isDark = false;
-  } else if (cookieDark) {
-    isDark = true;
-  } else if (cookieLight) {
-    isDark = false;
-  } else {
-    // Fall back to system preference if no explicit choice
-    isDark = systemPreference;
+  // Function that runs our TOC scroller
+  function initTOCScroller() {
+    // Get TOC elements
+    const tocContainer = document.querySelector('.toc-container');
+    const tocList = document.querySelector('.toc-list');
+    const tocLinks = Array.from(document.querySelectorAll('.toc-list a'));
+    
+    if (!tocContainer || !tocList || tocLinks.length === 0) {
+      return;
+    }
+    
+    // Create our own active tracking (don't rely on existing)
+    let currentActiveLink = null;
+    
+    // Function to force scroll to a link
+    function scrollToLink(link) {
+      if (!link) return;
+      
+      // Get positions and dimensions
+      const linkRect = link.getBoundingClientRect();
+      const tocRect = tocList.getBoundingClientRect();
+      const linkTop = link.offsetTop;
+      
+      // Calculate target scroll position (center link in view)
+      const targetScroll = linkTop - (tocRect.height / 2) + (linkRect.height / 2);
+      
+      // Force scroll with both methods for maximum compatibility
+      tocList.scrollTop = targetScroll;
+      try {
+        tocList.scroll({
+          top: targetScroll,
+          behavior: 'smooth'
+        });
+      } catch (e) {
+        // Fallback if smooth scroll not supported
+        tocList.scrollTop = targetScroll;
+      }
+    }
+    
+    // Function to update active link based on scroll position
+    function updateActiveLink() {
+      // Get all section elements
+      const sections = Array.from(document.querySelectorAll('h2, h3'));
+      
+      // Find the current section
+      let currentSection = null;
+      let minDistance = Infinity;
+      
+      sections.forEach(section => {
+        const distance = Math.abs(section.getBoundingClientRect().top - 100);
+        if (distance < minDistance) {
+          minDistance = distance;
+          currentSection = section;
+        }
+      });
+      
+      // Find the link corresponding to the current section
+      if (currentSection) {
+        const sectionId = currentSection.getAttribute('id');
+        const matchingLink = tocLinks.find(link => 
+          link.getAttribute('href') === '#' + sectionId
+        );
+        
+        if (matchingLink && matchingLink !== currentActiveLink) {
+          // Clear previous active
+          tocLinks.forEach(link => link.classList.remove('active'));
+          
+          // Set new active
+          matchingLink.classList.add('active');
+          currentActiveLink = matchingLink;
+          
+          // Scroll TOC to show this link
+          scrollToLink(matchingLink);
+        }
+      }
+    }
+    
+    // Set up event listeners with debounce for better performance
+    let scrollTimeout;
+    window.addEventListener('scroll', function() {
+      if (scrollTimeout) clearTimeout(scrollTimeout);
+      scrollTimeout = setTimeout(updateActiveLink, 100);
+    });
+    
+    // Handle clicks on TOC links
+    tocLinks.forEach(link => {
+      link.addEventListener('click', function() {
+        setTimeout(() => scrollToLink(link), 100);
+      });
+    });
+    
+    // Force an initial update
+    setTimeout(updateActiveLink, 300);
   }
   
-  // Apply theme immediately
-  if (isDark) {
-    document.documentElement.classList.add('dark');
-    document.documentElement.setAttribute('data-theme', 'dark');
-    document.cookie = "darkMode=true;path=/;max-age=31536000";
+  // Run after DOM is ready
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initTOCScroller);
   } else {
-    // Explicitly remove dark mode classes to ensure light mode
-    document.documentElement.classList.remove('dark');
-    document.documentElement.setAttribute('data-theme', 'light');
-    document.cookie = "darkMode=false;path=/;max-age=31536000";
+    initTOCScroller();
   }
   
-  // Add a marker class to control the flash prevention styles
-  document.documentElement.classList.add(isDark ? 'theme-dark' : 'theme-light');
+  // Also try after a delay for dynamically loaded content
+  setTimeout(initTOCScroller, 1000);
 })();
 </script>
-<style id="flash-prevention">
-  /* Only apply to elements with the right theme class */
-  html.theme-dark {
-    background-color: #121212 !important;
-  }
-  
-  html.theme-dark body {
-    background-color: #121212 !important;
-  }
-  
-  html.theme-dark .toc-container {
-    background-color: #1a1a1a !important;
-  }
-  
-  /* Light mode styles to override any incorrect dark styling */
-  html.theme-light {
-    background-color: #ffffff !important;
-  }
-  
-  html.theme-light body {
-    background-color: #ffffff !important;
-  }
-  
-  html.theme-light .toc-container {
-    background-color: #f8f8f8 !important;
-  }
-</style>
 `
 
-  // Insert theme injection before </head>
+  // Insert TOC scroller injection before </head>
   if (html.includes('</head>')) {
-    html = html.replace('</head>', themeInjection + '</head>')
+    html = html.replace('</head>', tocScrollerInjection + '</head>')
   }
   
   // Create new response
