@@ -110,7 +110,7 @@ html[data-theme='dark'] .post-header {
 .featured-thought__wrapper {
   padding-top: 75px;
 }
-.post-content {background-color: #f1f1f1 !important;
+.post-content, .progress-bar, .post-card {background-color: #f1f1f1 !important;
 }
 .post-page, .project-page {
   gap: 60px !important;
