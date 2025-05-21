@@ -102,10 +102,8 @@ html[data-theme='dark'] .post-header {
 .post-footer {background-color: transparent !important; padding: 30px !important;}
 .progress-bar {background-color: #ffffff !important}
 
-.post-footer html[data-theme='dark'] & {background-color: #211A14 !important;}
+.post-footer html[data-theme='dark'] & {background-color: #E6DDD6 !important;}
 .progress-bar html[data-theme='dark'] & {background-color: #211A14 !important;}
-
-.post-footer__meta html[data-theme='dark'] & {color: #E6DDD6 !important;}
 
 .post-content {padding-bottom: 6rem !important;}
 
