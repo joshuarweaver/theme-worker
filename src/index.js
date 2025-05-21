@@ -23,56 +23,80 @@ async function handleRequest(request) {
   
   // Check for theme preference in cookies
   const darkModeCookie = cookies['darkMode'] === 'true' || cookies['theme-preference'] === 'dark';
+  const lightModeCookie = cookies['darkMode'] === 'false' || cookies['theme-preference'] === 'light';
   
   // Get HTML content
   let html = await response.text()
   
-  // Create a more targeted injection that won't break functionality
+  // Create a theme handler that properly respects both modes
   const themeInjection = `
 <script data-cfasync="false">
-// Preserve existing dark mode preference
+// Theme preference handler
 (function() {
   // Get stored preference or system preference
   const storedPreference = localStorage.getItem('darkMode');
-  const cookiePreference = "${darkModeCookie}" === "true";
+  const cookieDark = "${darkModeCookie}" === "true";
+  const cookieLight = "${lightModeCookie}" === "true";
   const systemPreference = window.matchMedia('(prefers-color-scheme: dark)').matches;
   
-  // Determine theme (priority: localStorage > cookie > system)
-  const isDark = storedPreference === 'true' || 
-               (storedPreference !== 'false' && 
-                (cookiePreference || systemPreference));
+  // Determine theme with proper priority
+  let isDark = false;
+  
+  // Explicit user preferences take priority
+  if (storedPreference === 'true') {
+    isDark = true;
+  } else if (storedPreference === 'false') {
+    isDark = false;
+  } else if (cookieDark) {
+    isDark = true;
+  } else if (cookieLight) {
+    isDark = false;
+  } else {
+    // Fall back to system preference if no explicit choice
+    isDark = systemPreference;
+  }
   
   // Apply theme immediately
   if (isDark) {
     document.documentElement.classList.add('dark');
     document.documentElement.setAttribute('data-theme', 'dark');
-    // Only add body class if needed for theme
-    if (window.onload) {
-      const oldOnload = window.onload;
-      window.onload = function() {
-        oldOnload();
-        document.body.classList.add('dark-mode');
-      };
-    }
+    document.cookie = "darkMode=true;path=/;max-age=31536000";
+  } else {
+    // Explicitly remove dark mode classes to ensure light mode
+    document.documentElement.classList.remove('dark');
+    document.documentElement.setAttribute('data-theme', 'light');
+    document.cookie = "darkMode=false;path=/;max-age=31536000";
   }
+  
+  // Add a marker class to control the flash prevention styles
+  document.documentElement.classList.add(isDark ? 'theme-dark' : 'theme-light');
 })();
 </script>
 <style id="flash-prevention">
-  /* Only apply background color to prevent flash */
-  html.dark, html[data-theme="dark"] {
+  /* Only apply to elements with the right theme class */
+  html.theme-dark {
     background-color: #121212 !important;
   }
   
-  body.dark-mode, html.dark body {
+  html.theme-dark body {
     background-color: #121212 !important;
   }
   
-  /* Theme-specific elements */
-  html.dark .toc-container, 
-  html[data-theme="dark"] .toc-container,
-  html.dark .site-header,
-  html[data-theme="dark"] .site-header {
+  html.theme-dark .toc-container {
     background-color: #1a1a1a !important;
+  }
+  
+  /* Light mode styles to override any incorrect dark styling */
+  html.theme-light {
+    background-color: #ffffff !important;
+  }
+  
+  html.theme-light body {
+    background-color: #ffffff !important;
+  }
+  
+  html.theme-light .toc-container {
+    background-color: #f8f8f8 !important;
   }
 </style>
 `
