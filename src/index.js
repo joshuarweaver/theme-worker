@@ -119,6 +119,8 @@ html[data-theme='dark'] .post-header {
 }
 .post-card__img-wrapper {display: none !important;
 }
+.post-footer__meta, .progress-bar-main__share {color: #212121 !important;
+}
 .value-props-section, .skillset-section {
   padding-top: 0px !important;
 }
