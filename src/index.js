@@ -110,6 +110,7 @@ html[data-theme='dark'] .post-header {
 .featured-thought__wrapper {
   padding-top: 75px;
 }
+.page {background-color: #fffff !important;}
 .post-page, .project-page {
   gap: 60px !important;
 }
