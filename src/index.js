@@ -120,7 +120,7 @@ html[data-theme='dark'] .post-header {
 .post-page, .project-page {
   gap: 60px !important;
 }
-.post {width:100% !important; margin-left: 0px !important; padding-top: 0px !important;
+.post {width:100% !important; margin-left: 0px !important; padding-top: 100px !important;
 }
 .post-card__img-wrapper {display: none !important;
 }
