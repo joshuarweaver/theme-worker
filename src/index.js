@@ -3,6 +3,10 @@ addEventListener('fetch', event => {
 })
 
 async function handleRequest(request) {
+  // Mobile detection for responsive image optimization
+  const userAgent = request.headers.get("user-agent") || "";
+  const isMobile = /Android|iPhone|iPad|iPod|BlackBerry|Mobile/i.test(userAgent);
+
   // Get original response
   const response = await fetch(request)
   
@@ -14,6 +18,15 @@ async function handleRequest(request) {
 
   // Get HTML content
   let html = await response.text()
+  
+  // === MOBILE IMAGE OPTIMIZATION ===
+  // Downsize hero images for mobile devices
+  if (isMobile) {
+    html = html.replace(/\/size\/w2000\//g, "/size/w800/");
+    // Also handle other common large image sizes
+    html = html.replace(/\/size\/w1600\//g, "/size/w800/");
+    html = html.replace(/\/size\/w1200\//g, "/size/w600/");
+  }
   
   // === IMAGE OPTIMIZATION FEATURES ===
   // Inject lazy loading and decoding on all <img> tags
