@@ -1,221 +1,44 @@
-addEventListener('fetch', event => {
-  event.respondWith(handleRequest(event.request))
-})
+(() => {
+  var __defProp = Object.defineProperty;
+  var __name = (target, value) => __defProp(target, "name", { value, configurable: true });
 
-async function handleRequest(request) {
-  // Mobile detection for responsive image optimization
-  const userAgent = request.headers.get("user-agent") || "";
-  const isMobile = /Android|iPhone|iPad|iPod|BlackBerry|Mobile/i.test(userAgent);
-
-  // Get original response
-  const response = await fetch(request)
-  
-  // Only modify HTML
-  const contentType = response.headers.get('content-type') || ''
-  if (!contentType.includes('text/html')) {
-    return response
-  }
-
-  // Get HTML content
-  let html = await response.text()
-  
-  // === AGGRESSIVE MOBILE OPTIMIZATION ===
-  if (isMobile) {
-    // Even more aggressive image downsizing for mobile
-    html = html.replace(/\/size\/w2000\//g, "/size/w600/");
-    html = html.replace(/\/size\/w1600\//g, "/size/w600/");
-    html = html.replace(/\/size\/w1200\//g, "/size/w500/");
-    html = html.replace(/\/size\/w800\//g, "/size/w400/");
-    
-    // Remove non-critical images on mobile (like decorative ones)
-    html = html.replace(/<img[^>]*class="[^"]*decorative[^"]*"[^>]*>/gi, '');
-    
-    // Defer all non-critical JavaScript on mobile
-    html = html.replace(/<script(?![^>]*defer)(?![^>]*async)(?![^>]*data-cfasync="false")([^>]*)>/gi, '<script defer$1>');
-    
-    // Remove unnecessary elements for mobile
-    html = html.replace(/<div[^>]*class="[^"]*desktop-only[^"]*"[^>]*>.*?<\/div>/gis, '');
-  }
-  
-  // === GHOST PORTAL SCRIPT OPTIMIZATION ===
-  // Remove render-blocking Ghost portal script from head and defer it
-  let portalScript = '';
-  html = html.replace(/<script[^>]*src="[^"]*cdn\.jsdelivr\.net\/ghost\/portal[^"]*"[^>]*><\/script>/gi, (match) => {
-    // Extract the script and store it for later injection
-    portalScript = match.replace('<script', '<script defer');
-    return ''; // Remove from current position
+  // src/index.js
+  addEventListener("fetch", (event) => {
+    event.respondWith(handleRequest(event.request));
   });
-  
-  // If we found a portal script, inject it at the end of body for non-blocking load
-  if (portalScript) {
-    html = html.replace(/<\/body>/i, `${portalScript}</body>`);
-  }
-  
-  // === DEFER PROBLEMATIC JAVASCRIPT FILES ===
-  // Defer table-of-contents.js, svg-fix.js, and toc-posts-fix.js to prevent render blocking
-  const scriptsToDefer = [
-    'table-of-contents.js',
-    'svg-fix.js', 
-    'toc-posts-fix.js',
-    // Heavy CDN scripts
-    'sodo-search.min.js',
-    'react-dom.production.min.js', 
-    'flexsearch.bundle.module.min.js',
-    'i18next.js',
-    'content-api.js',
-    'PopupModal.js'
-  ];
-
-  // Also handle Stripe and other domain-based scripts
-  const scriptDomainsToDefer = [
-    'js.stripe.com',
-    'cdn.jsdelivr.net/ghost'
-  ];
-  
-  scriptsToDefer.forEach(scriptName => {
-    html = html.replace(
-      new RegExp(`<script([^>]*src="[^"]*${scriptName}[^"]*"[^>]*)></script>`, 'gi'),
-      (match, attrs) => {
-        // On mobile, be more aggressive - load these scripts only after page interaction
-        if (isMobile) {
-          // Extract src attribute for delayed loading
-          const srcMatch = attrs.match(/src="([^"]*)"/);
-          if (srcMatch) {
-            return `<!-- DELAYED-SCRIPT: ${srcMatch[1]} -->`;
-          }
-        }
-        
-        // On desktop, just defer
-        if (!attrs.includes('defer') && !attrs.includes('async')) {
-          return `<script defer${attrs}></script>`;
-        }
-        return match;
-      }
-    );
-  });
-
-  // Handle domain-based script deferring (like Stripe)
-  scriptDomainsToDefer.forEach(domain => {
-    html = html.replace(
-      new RegExp(`<script([^>]*src="[^"]*${domain}[^"]*"[^>]*)></script>`, 'gi'),
-      (match, attrs) => {
-        // Skip if already handled by Ghost portal optimization above
-        if (attrs.includes('portal')) return match;
-        
-        if (isMobile) {
-          // Delay heavy scripts on mobile
-          const srcMatch = attrs.match(/src="([^"]*)"/);
-          if (srcMatch) {
-            return `<!-- DELAYED-SCRIPT: ${srcMatch[1]} -->`;
-          }
-        }
-        
-        // On desktop, defer heavy scripts
-        if (!attrs.includes('defer') && !attrs.includes('async')) {
-          return `<script defer${attrs}></script>`;
-        }
-        return match;
-      }
-    );
-  });
-
-  // Add script to load delayed scripts on mobile after user interaction
-  if (isMobile) {
-    const delayedLoadScript = `
-<script>
-// Load delayed scripts after first user interaction on mobile
-let delayedScriptsLoaded = false;
-let paymentScriptsLoaded = false;
-
-function loadDelayedScripts() {
-  if (delayedScriptsLoaded) return;
-  delayedScriptsLoaded = true;
-  
-  // Find and execute delayed scripts (but skip payment-related ones)
-  const comments = document.createNodeIterator(document, NodeFilter.SHOW_COMMENT);
-  let comment;
-  while (comment = comments.nextNode()) {
-    if (comment.textContent.includes('DELAYED-SCRIPT:')) {
-      const src = comment.textContent.replace('DELAYED-SCRIPT: ', '').trim();
-      
-      // Skip payment scripts for now - load them only when needed
-      if (src.includes('stripe.com') || src.includes('portal')) {
-        continue;
-      }
-      
-      const script = document.createElement('script');
-      script.src = src;
-      script.defer = true;
-      document.body.appendChild(script);
+  async function handleRequest(request) {
+    const userAgent = request.headers.get("user-agent") || "";
+    const isMobile = /Android|iPhone|iPad|iPod|BlackBerry|Mobile/i.test(userAgent);
+    const response = await fetch(request);
+    const contentType = response.headers.get("content-type") || "";
+    if (!contentType.includes("text/html")) {
+      return response;
     }
-  }
-}
-
-function loadPaymentScripts() {
-  if (paymentScriptsLoaded) return;
-  paymentScriptsLoaded = true;
-  
-  // Load payment-related scripts only when needed
-  const comments = document.createNodeIterator(document, NodeFilter.SHOW_COMMENT);
-  let comment;
-  while (comment = comments.nextNode()) {
-    if (comment.textContent.includes('DELAYED-SCRIPT:')) {
-      const src = comment.textContent.replace('DELAYED-SCRIPT: ', '').trim();
-      
-      if (src.includes('stripe.com') || src.includes('portal')) {
-        const script = document.createElement('script');
-        script.src = src;
-        script.defer = true;
-        document.body.appendChild(script);
-      }
+    let html = await response.text();
+    if (isMobile) {
+      html = html.replace(/\/size\/w2000\//g, "/size/w600/");
+      html = html.replace(/\/size\/w1600\//g, "/size/w600/");
+      html = html.replace(/\/size\/w1200\//g, "/size/w500/");
+      html = html.replace(/\/size\/w800\//g, "/size/w400/");
+      html = html.replace(/<img[^>]*class="[^"]*decorative[^"]*"[^>]*>/gi, "");
+      html = html.replace(/<script(?![^>]*defer)(?![^>]*async)(?![^>]*data-cfasync="false")([^>]*)>/gi, "<script defer$1>");
+      html = html.replace(/<div[^>]*class="[^"]*desktop-only[^"]*"[^>]*>.*?<\/div>/gis, "");
     }
-  }
-}
-
-// Load basic scripts on first interaction
-['touchstart', 'scroll', 'click'].forEach(event => {
-  document.addEventListener(event, loadDelayedScripts, { once: true, passive: true });
-});
-
-// Load payment scripts when user shows payment intent
-document.addEventListener('click', function(e) {
-  if (e.target.closest('button[data-portal], .gh-portal-trigger, [href*="subscribe"], [href*="membership"]')) {
-    loadPaymentScripts();
-  }
-}, { passive: true });
-
-// Fallback: load basic scripts after 3 seconds, payment scripts after 10 seconds
-setTimeout(loadDelayedScripts, 3000);
-setTimeout(loadPaymentScripts, 10000);
-</script>`;
-    html = html.replace(/<\/body>/i, `${delayedLoadScript}</body>`);
-  }
-  
-  // === IMAGE OPTIMIZATION FEATURES ===
-  // Inject lazy loading and decoding on all <img> tags
-  html = html.replace(/<img\b([^>]*?)>/gi, (match, attrs) => {
-    if (attrs.includes("loading=")) return match; // skip if already optimized
-
-    const hasFetchPriority = attrs.includes("fetchpriority=");
-    const lazyAttrs = `loading="lazy" decoding="async"${hasFetchPriority ? "" : " fetchpriority=\"low\""}`;
-
-    return `<img ${attrs} ${lazyAttrs}>`;
-  });
-
-  // Upgrade first image to fetchpriority="high" (assume it's LCP)
-  html = html.replace(/<img([^>]+?)fetchpriority="low"/i, (match, attrs) => {
-    return `<img${attrs}fetchpriority="high"`;
-  });
-
-  // Add viewport meta tag if missing (important for mobile CWV)
-  if (!html.includes('name="viewport"')) {
-    const viewportTag = '\n    <meta name="viewport" content="width=device-width, initial-scale=1">';
-    html = html.replace(/<head>/i, `<head>${viewportTag}`);
-  }
-
-  // === CRITICAL CSS INLINING FOR MOBILE ===
-  if (isMobile) {
-    const criticalMobileCSS = `
+    html = html.replace(/<img\b([^>]*?)>/gi, (match, attrs) => {
+      if (attrs.includes("loading=")) return match;
+      const hasFetchPriority = attrs.includes("fetchpriority=");
+      const lazyAttrs = `loading="lazy" decoding="async"${hasFetchPriority ? "" : ' fetchpriority="low"'}`;
+      return `<img ${attrs} ${lazyAttrs}>`;
+    });
+    html = html.replace(/<img([^>]+?)fetchpriority="low"/i, (match, attrs) => {
+      return `<img${attrs}fetchpriority="high"`;
+    });
+    if (!html.includes('name="viewport"')) {
+      const viewportTag = '\n    <meta name="viewport" content="width=device-width, initial-scale=1">';
+      html = html.replace(/<head>/i, `<head>${viewportTag}`);
+    }
+    if (isMobile) {
+      const criticalMobileCSS = `
 <style>
 /* Critical Mobile-First CSS - Inlined for instant rendering */
 body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
@@ -226,63 +49,34 @@ h1, h2, h3 { font-size: 1.5em !important; line-height: 1.3 !important; }
 p { font-size: 16px !important; line-height: 1.4 !important; }
 /* Minimal critical styles only */
 </style>`;
-    html = html.replace(/<head>/i, `<head>${criticalMobileCSS}`);
-  }
-
-  // Optimize CSS delivery - but be careful with worker-served CSS
-  html = html.replace(
-    /<link([^>]+)rel=["']stylesheet["']([^>]+)>/gi, 
-    (match, beforeRel, afterRel) => {
-      // Skip if already optimized, is critical CSS, or contains worker-like patterns
-      if (match.includes('media=') || 
-          match.includes('critical') || 
-          match.includes('above-fold') ||
-          match.includes('/_worker') ||
-          match.includes('/workers/') ||
-          afterRel.includes('/_worker') ||
-          afterRel.includes('/workers/') ||
-          beforeRel.includes('/_worker') ||
-          beforeRel.includes('/workers/') ||
-          match.includes('fontshare.com')) { // Don't optimize your font loading
-        return match;
-      }
-      
-      // Also skip if the URL looks like it might be worker-served (no file extension or special patterns)
-      const hrefMatch = match.match(/href=["']([^"']+)["']/);
-      if (hrefMatch) {
-        const href = hrefMatch[1];
-        // Skip if no extension, or looks like a worker path
-        if (!href.includes('.css') || 
-            href.startsWith('/_') || 
-            href.includes('/api/') ||
-            href.includes('/edge/')) {
+      html = html.replace(/<head>/i, `<head>${criticalMobileCSS}`);
+    }
+    html = html.replace(
+      /<link([^>]+)rel=["']stylesheet["']([^>]+)>/gi,
+      (match, beforeRel, afterRel) => {
+        if (match.includes("media=") || match.includes("critical") || match.includes("above-fold") || match.includes("/_worker") || match.includes("/workers/") || afterRel.includes("/_worker") || afterRel.includes("/workers/") || beforeRel.includes("/_worker") || beforeRel.includes("/workers/") || match.includes("fontshare.com")) {
           return match;
         }
-      }
-      
-      return `<link${beforeRel}rel="preload"${afterRel} as="style" onload="this.onload=null;this.rel='stylesheet'">
+        const hrefMatch = match.match(/href=["']([^"']+)["']/);
+        if (hrefMatch) {
+          const href = hrefMatch[1];
+          if (!href.includes(".css") || href.startsWith("/_") || href.includes("/api/") || href.includes("/edge/")) {
+            return match;
+          }
+        }
+        return `<link${beforeRel}rel="preload"${afterRel} as="style" onload="this.onload=null;this.rel='stylesheet'">
 <noscript><link${beforeRel}rel="stylesheet"${afterRel}></noscript>`;
-    }
-  );
-  // === END IMAGE OPTIMIZATION FEATURES ===
-  
-  // === ADDITIONAL MOBILE PERFORMANCE OPTIMIZATIONS ===
-  if (isMobile) {
-    // Simple HTML optimization for mobile - just remove extra whitespace
-    html = html.replace(/\n\s+/g, '\n'); // Reduce indentation whitespace
-    
-    // Preload critical resources for mobile
-    const criticalPreloads = `
+      }
+    );
+    if (isMobile) {
+      html = html.replace(/\n\s+/g, "\n");
+      const criticalPreloads = `
 <link rel="preload" as="font" href="https://api.fontshare.com/v2/css?f[]=satoshi@1,2" crossorigin>
 `;
-    html = html.replace(/<head>/i, `<head>${criticalPreloads}`);
-  }
-
-  // Check if it's a post page (for progress bar)
-  const isPostPage = html.includes('post-content') || html.includes('post-full-content')
-  
-  // Create optimized injection
-  const optimizedInjection = `
+      html = html.replace(/<head>/i, `<head>${criticalPreloads}`);
+    }
+    const isPostPage = html.includes("post-content") || html.includes("post-full-content");
+    const optimizedInjection = `
 
 <link rel="preconnect" href="https://api.fontshare.com" crossorigin>
 <link href="https://api.fontshare.com/v2/css?f[]=satoshi@1,2&display=swap" rel="stylesheet">
@@ -315,7 +109,7 @@ footer .logo__title {
   padding: 10px !important;
   gap: 10px !important;
 }
-` : ''}
+` : ""}
 
 /* Core Styles - Combined & Optimized */
 .logo__title, footer .logo__title {
@@ -637,7 +431,7 @@ html[data-theme='dark'] .toc-list::-webkit-scrollbar-track {
     
     // Initial update
     updateProgress();
-    ` : ''}
+    ` : ""}
     
     // TOC functionality with more robust handling
     function initTOCScroller() {
@@ -777,26 +571,22 @@ html[data-theme='dark'] .toc-list::-webkit-scrollbar-track {
   // Also run on load as a failsafe
   window.addEventListener('load', init);
 })();
-</script>
-`
-
-  // Insert optimized injection before </head>
-  if (html.includes('</head>')) {
-    html = html.replace('</head>', optimizedInjection + '</head>')
+<\/script>
+`;
+    if (html.includes("</head>")) {
+      html = html.replace("</head>", optimizedInjection + "</head>");
+    }
+    const optimizedResponse = new Response(html, {
+      status: response.status,
+      statusText: response.statusText,
+      headers: new Headers(response.headers)
+    });
+    optimizedResponse.headers.set("Cache-Control", "public, max-age=3600, must-revalidate");
+    optimizedResponse.headers.set("X-Content-Type-Options", "nosniff");
+    optimizedResponse.headers.set("X-Frame-Options", "DENY");
+    optimizedResponse.headers.set("X-XSS-Protection", "1; mode=block");
+    return optimizedResponse;
   }
-  
-  // Create new response with enhanced headers for better performance
-  const optimizedResponse = new Response(html, {
-    status: response.status,
-    statusText: response.statusText,
-    headers: new Headers(response.headers)
-  })
-
-  // Add performance headers for better Core Web Vitals
-  optimizedResponse.headers.set('Cache-Control', 'public, max-age=3600, must-revalidate')
-  optimizedResponse.headers.set('X-Content-Type-Options', 'nosniff')
-  optimizedResponse.headers.set('X-Frame-Options', 'DENY')
-  optimizedResponse.headers.set('X-XSS-Protection', '1; mode=block')
-  
-  return optimizedResponse
-}
+  __name(handleRequest, "handleRequest");
+})();
+//# sourceMappingURL=index.js.map
