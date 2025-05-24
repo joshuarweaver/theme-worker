@@ -19,13 +19,22 @@ async function handleRequest(request) {
   // Get HTML content
   let html = await response.text()
   
-  // === MOBILE IMAGE OPTIMIZATION ===
-  // Downsize hero images for mobile devices
+  // === AGGRESSIVE MOBILE OPTIMIZATION ===
   if (isMobile) {
-    html = html.replace(/\/size\/w2000\//g, "/size/w800/");
-    // Also handle other common large image sizes
-    html = html.replace(/\/size\/w1600\//g, "/size/w800/");
-    html = html.replace(/\/size\/w1200\//g, "/size/w600/");
+    // Even more aggressive image downsizing for mobile
+    html = html.replace(/\/size\/w2000\//g, "/size/w600/");
+    html = html.replace(/\/size\/w1600\//g, "/size/w600/");
+    html = html.replace(/\/size\/w1200\//g, "/size/w500/");
+    html = html.replace(/\/size\/w800\//g, "/size/w400/");
+    
+    // Remove non-critical images on mobile (like decorative ones)
+    html = html.replace(/<img[^>]*class="[^"]*decorative[^"]*"[^>]*>/gi, '');
+    
+    // Defer all non-critical JavaScript on mobile
+    html = html.replace(/<script(?![^>]*defer)(?![^>]*async)(?![^>]*data-cfasync="false")([^>]*)>/gi, '<script defer$1>');
+    
+    // Remove unnecessary elements for mobile
+    html = html.replace(/<div[^>]*class="[^"]*desktop-only[^"]*"[^>]*>.*?<\/div>/gis, '');
   }
   
   // === IMAGE OPTIMIZATION FEATURES ===
@@ -48,6 +57,22 @@ async function handleRequest(request) {
   if (!html.includes('name="viewport"')) {
     const viewportTag = '\n    <meta name="viewport" content="width=device-width, initial-scale=1">';
     html = html.replace(/<head>/i, `<head>${viewportTag}`);
+  }
+
+  // === CRITICAL CSS INLINING FOR MOBILE ===
+  if (isMobile) {
+    const criticalMobileCSS = `
+<style>
+/* Critical Mobile-First CSS - Inlined for instant rendering */
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+img { max-width: 100%; height: auto; }
+.header, .nav { display: none !important; } /* Hide complex navigation on mobile */
+.post-content, .content { padding: 10px !important; }
+h1, h2, h3 { font-size: 1.5em !important; line-height: 1.3 !important; }
+p { font-size: 16px !important; line-height: 1.4 !important; }
+/* Minimal critical styles only */
+</style>`;
+    html = html.replace(/<head>/i, `<head>${criticalMobileCSS}`);
   }
 
   // Optimize CSS delivery - but be careful with worker-served CSS
@@ -87,6 +112,20 @@ async function handleRequest(request) {
   );
   // === END IMAGE OPTIMIZATION FEATURES ===
   
+  // === ADDITIONAL MOBILE PERFORMANCE OPTIMIZATIONS ===
+  if (isMobile) {
+    // Simple HTML optimization for mobile - just remove extra whitespace
+    html = html.replace(/\n\s+/g, '\n'); // Reduce indentation whitespace
+    
+    // Preload critical resources for mobile
+    const criticalPreloads = `
+<link rel="preload" as="font" href="https://api.fontshare.com/v2/css?f[]=clash-display@700" crossorigin>
+<link rel="dns-prefetch" href="//images.unsplash.com">
+<link rel="dns-prefetch" href="//cdn.jsdelivr.net">
+`;
+    html = html.replace(/<head>/i, `<head>${criticalPreloads}`);
+  }
+
   // Check if it's a post page (for progress bar)
   const isPostPage = html.includes('post-content') || html.includes('post-full-content')
   
@@ -98,7 +137,12 @@ async function handleRequest(request) {
 <link rel="preconnect" href="https://www.googletagmanager.com">
 <link rel="dns-prefetch" href="//fonts.googleapis.com">
 <link rel="dns-prefetch" href="//www.google-analytics.com">
-<link href="https://api.fontshare.com/v2/css?f[]=clash-display@700&f[]=satoshi@1,2&display=swap" rel="stylesheet">
+${isMobile ? 
+  // Simplified font loading for mobile - only essential fonts
+  '<link href="https://api.fontshare.com/v2/css?f[]=clash-display@700&display=swap" rel="stylesheet">' :
+  // Full font loading for desktop
+  '<link href="https://api.fontshare.com/v2/css?f[]=clash-display@700&f[]=satoshi@1,2&display=swap" rel="stylesheet">'
+}
 
 <style>
 /* Responsive Image Optimization */
@@ -106,6 +150,29 @@ img {
   max-width: 100%;
   height: auto;
 }
+
+${isMobile ? `
+/* Mobile-Optimized Styles */
+* {
+  font-display: swap !important;
+}
+body {
+  font-size: 16px !important;
+  line-height: 1.4 !important;
+}
+.logo__title {
+  font-size: 2rem !important;
+}
+footer .logo__title {
+  font-size: 2.5rem !important;
+}
+/* Simplified mobile layout */
+.project-header__wrapper,
+.page-header__wrapper {
+  padding: 10px !important;
+  gap: 10px !important;
+}
+` : ''}
 
 /* Core Styles - Combined & Optimized */
 .logo__title, footer .logo__title {
