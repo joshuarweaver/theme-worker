@@ -15,6 +15,65 @@ async function handleRequest(request) {
   // Get HTML content
   let html = await response.text()
   
+  // === IMAGE OPTIMIZATION FEATURES ===
+  // Inject lazy loading and decoding on all <img> tags
+  html = html.replace(/<img\b([^>]*?)>/gi, (match, attrs) => {
+    if (attrs.includes("loading=")) return match; // skip if already optimized
+
+    const hasFetchPriority = attrs.includes("fetchpriority=");
+    const lazyAttrs = `loading="lazy" decoding="async"${hasFetchPriority ? "" : " fetchpriority=\"low\""}`;
+
+    return `<img ${attrs} ${lazyAttrs}>`;
+  });
+
+  // Upgrade first image to fetchpriority="high" (assume it's LCP)
+  html = html.replace(/<img([^>]+?)fetchpriority="low"/i, (match, attrs) => {
+    return `<img${attrs}fetchpriority="high"`;
+  });
+
+  // Add viewport meta tag if missing (important for mobile CWV)
+  if (!html.includes('name="viewport"')) {
+    const viewportTag = '\n    <meta name="viewport" content="width=device-width, initial-scale=1">';
+    html = html.replace(/<head>/i, `<head>${viewportTag}`);
+  }
+
+  // Optimize CSS delivery - but be careful with worker-served CSS
+  html = html.replace(
+    /<link([^>]+)rel=["']stylesheet["']([^>]+)>/gi, 
+    (match, beforeRel, afterRel) => {
+      // Skip if already optimized, is critical CSS, or contains worker-like patterns
+      if (match.includes('media=') || 
+          match.includes('critical') || 
+          match.includes('above-fold') ||
+          match.includes('/_worker') ||
+          match.includes('/workers/') ||
+          afterRel.includes('/_worker') ||
+          afterRel.includes('/workers/') ||
+          beforeRel.includes('/_worker') ||
+          beforeRel.includes('/workers/') ||
+          match.includes('fontshare.com')) { // Don't optimize your font loading
+        return match;
+      }
+      
+      // Also skip if the URL looks like it might be worker-served (no file extension or special patterns)
+      const hrefMatch = match.match(/href=["']([^"']+)["']/);
+      if (hrefMatch) {
+        const href = hrefMatch[1];
+        // Skip if no extension, or looks like a worker path
+        if (!href.includes('.css') || 
+            href.startsWith('/_') || 
+            href.includes('/api/') ||
+            href.includes('/edge/')) {
+          return match;
+        }
+      }
+      
+      return `<link${beforeRel}rel="preload"${afterRel} as="style" onload="this.onload=null;this.rel='stylesheet'">
+<noscript><link${beforeRel}rel="stylesheet"${afterRel}></noscript>`;
+    }
+  );
+  // === END IMAGE OPTIMIZATION FEATURES ===
+  
   // Check if it's a post page (for progress bar)
   const isPostPage = html.includes('post-content') || html.includes('post-full-content')
   
@@ -22,6 +81,10 @@ async function handleRequest(request) {
   const optimizedInjection = `
 
 <link rel="preconnect" href="https://api.fontshare.com" crossorigin>
+<link rel="preconnect" href="https://www.google-analytics.com">
+<link rel="preconnect" href="https://www.googletagmanager.com">
+<link rel="dns-prefetch" href="//fonts.googleapis.com">
+<link rel="dns-prefetch" href="//www.google-analytics.com">
 <link href="https://api.fontshare.com/v2/css?f[]=clash-display@700&f[]=satoshi@1,2&display=swap" rel="stylesheet">
 
 <style>
@@ -492,10 +555,18 @@ html[data-theme='dark'] .toc-list::-webkit-scrollbar-track {
     html = html.replace('</head>', optimizedInjection + '</head>')
   }
   
-  // Create new response
-  return new Response(html, {
+  // Create new response with enhanced headers for better performance
+  const optimizedResponse = new Response(html, {
     status: response.status,
     statusText: response.statusText,
-    headers: response.headers
+    headers: new Headers(response.headers)
   })
+
+  // Add performance headers for better Core Web Vitals
+  optimizedResponse.headers.set('Cache-Control', 'public, max-age=3600, must-revalidate')
+  optimizedResponse.headers.set('X-Content-Type-Options', 'nosniff')
+  optimizedResponse.headers.set('X-Frame-Options', 'DENY')
+  optimizedResponse.headers.set('X-XSS-Protection', '1; mode=block')
+  
+  return optimizedResponse
 }
