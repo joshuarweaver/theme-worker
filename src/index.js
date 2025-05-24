@@ -101,6 +101,12 @@ async function handleRequest(request) {
 <link href="https://api.fontshare.com/v2/css?f[]=clash-display@700&f[]=satoshi@1,2&display=swap" rel="stylesheet">
 
 <style>
+/* Responsive Image Optimization */
+img {
+  max-width: 100%;
+  height: auto;
+}
+
 /* Core Styles - Combined & Optimized */
 .logo__title, footer .logo__title {
   font-family: 'Clash Display', sans-serif !important;
