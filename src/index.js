@@ -220,7 +220,6 @@ setTimeout(loadPaymentScripts, 10000);
 /* Critical Mobile-First CSS - Inlined for instant rendering */
 body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
 img { max-width: 100%; height: auto; }
-.header, .nav { display: none !important; } /* Hide complex navigation on mobile */
 .post-content, .content { padding: 10px !important; }
 h1, h2, h3 { font-size: 1.5em !important; line-height: 1.3 !important; }
 p { font-size: 16px !important; line-height: 1.4 !important; }
